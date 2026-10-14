@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Flappy Bird</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Orbitron & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05050a;
+            color: #f8fafc;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        .cyber-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .neon-glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+        .neon-glow-pink {
+            text-shadow: 0 0 10px rgba(255, 0, 85, 0.8), 0 0 20px rgba(255, 0, 85, 0.5);
+        }
+        .neon-box-cyan {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .neon-box-pink {
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4), inset 0 0 15px rgba(255, 0, 85, 0.2);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen select-none">
+
+    <!-- Header / Title -->
+    <header class="mb-4 text-center">
+        <h1 class="cyber-font text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 neon-glow-cyan">
+            CYBER FLAPPY
+        </h1>
+        <p class="text-xs text-cyan-300 tracking-widest mt-1 uppercase font-semibold">Neon Grid Edition</p>
+    </header>
+
+    <!-- Game Container -->
+    <div id="game-container" class="relative w-[380px] h-[560px] md:w-[420px] md:h-[620px] bg-slate-950 border-2 border-cyan-500/50 rounded-2xl overflow-hidden neon-box-cyan shadow-2xl">
+        
+        <!-- Canvas -->
+        <canvas id="gameCanvas" class="block w-full h-full cursor-pointer"></canvas>
+
+        <!-- HUD (Score during gameplay) -->
+        <div id="hud" class="absolute top-4 left-0 right-0 flex justify-between px-6 pointer-events-none hidden">
+            <div class="cyber-font text-cyan-400 text-xl font-bold neon-glow-cyan">SCORE: <span id="currentScore">0</span></div>
+            <div class="cyber-font text-pink-500 text-xl font-bold neon-glow-pink">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <!-- Start Screen Overlay -->
+        <div id="startScreen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-10 transition-opacity duration-300">
+            <div class="w-16 h-16 mb-4 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center neon-box-cyan animate-pulse">
+                <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <h2 class="cyber-font text-2xl font-bold text-cyan-400 mb-2">BEREIT MACHEN</h2>
+            <p class="text-slate-300 text-sm mb-6 max-w-xs">
+                Tippe, klicke oder drücke die <span class="text-yellow-400 font-bold">Leertaste</span>, um den Cyber-Vogel in der Schwebe zu halten und den Neon-Röhren auszuweichen.
+            </p>
+            <button id="startBtn" class="cyber-font px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-cyan-400 hover:to-blue-500 transition-all transform hover:scale-105 active:scale-95 neon-box-cyan">
+                SPIEL STARTEN
+            </button>
+            <div class="mt-6 text-xs text-slate-500">Highscore: <span id="startBestScore" class="text-pink-400 font-bold">0</span></div>
+        </div>
+
+        <!-- Game Over Screen Overlay -->
+        <div id="gameOverScreen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-10 hidden transition-opacity duration-300">
+            <div class="w-16 h-16 mb-3 rounded-xl bg-pink-500/20 border border-pink-500 flex items-center justify-center neon-box-pink">
+                <svg class="w-8 h-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            <h2 class="cyber-font text-3xl font-black text-pink-500 mb-1 neon-glow-pink">SYSTEM ABSTURZ</h2>
+            <p class="text-xs text-slate-400 mb-6 uppercase tracking-wider">Verbindung unterbrochen</p>
+            
+            <div class="w-full bg-slate-900/80 border border-slate-800 rounded-xl p-4 mb-6 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400">Erreichte Punkte:</span>
+                    <span id="finalScore" class="cyber-font text-cyan-400 font-bold">0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400">Highscore:</span>
+                    <span id="finalBestScore" class="cyber-font text-pink-400 font-bold">0</span>
+                </div>
+            </div>
+
+            <button id="restartBtn" class="cyber-font px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black rounded-xl shadow-lg hover:from-pink-400 hover:to-purple-500 transition-all transform hover:scale-105 active:scale-95 neon-box-pink">
+                NEUSTARTEN
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Footer Controls Hint -->
+    <footer class="mt-4 text-center text-xs text-slate-400">
+        Steuerung: <span class="text-cyan-400 font-semibold">Leertaste</span> / <span class="text-cyan-400 font-semibold">Mausklick</span> / <span class="text-cyan-400 font-semibold">Touchscreen</span>
+    </footer>
+
+    <!-- Game Logic Script -->
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const hud = document.getElementById('hud');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const currentScoreEl = document.getElementById('currentScore');
+        const bestScoreEl = document.getElementById('bestScore');
+        const startBestScoreEl = document.getElementById('startBestScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalBestScoreEl = document.getElementById('finalBestScore');
+
+        // Set high-DPI crisp rendering
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game States: 'START', 'PLAYING', 'GAMEOVER'
+        let gameState = 'START';
+        let score = 0;
+        let highscore = localStorage.getItem('cyber_flappy_highscore') || 0;
+        startBestScoreEl.textContent = highscore;
+        bestScoreEl.textContent = highscore;
+
+        // Audio Context setup using Web Audio API
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(250, now);
+                    osc.frequency.exponentialRampToValueAtTime(550, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'score') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(783.99, now + 0.08); // G5
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'crash') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {
+                console.error("Audio error:", e);
+            }
+        }
+
+        // Bird Object
+        const bird = {
+            x: 80,
+            y: 250,
+            radius: 16,
+            velocity: 0,
+            gravity: 0.38,
+            jumpStrength: -7.2,
+            rotation: 0,
+            trail: [],
+            reset() {
+                this.x = 80;
+                this.y = canvas.clientHeight / 2;
+                this.velocity = 0;
+                this.rotation = 0;
+                this.trail = [];
+            },
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+
+                // Rotation based on velocity
+                this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+
+                // Update trail particles
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > 8) {
+                    this.trail.shift();
+                }
+
+                // Floor / Ceiling collisions
+                const clientHeight = canvas.clientHeight;
+                if (this.y + this.radius >= clientHeight - 40) {
+                    this.y = clientHeight - 40 - this.radius;
+                    gameOver();
+                }
+                if (this.y - this.radius <= 0) {
+                    this.y = this.radius;
+                    this.velocity = 0;
+                }
+            },
+            draw() {
+                // Draw neon trail
+                for (let i = 0; i < this.trail.length; i++) {
+                    const p = this.trail[i];
+                    const alpha = i / this.trail.length;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, this.radius * (i / this.trail.length), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 243, 255, ${alpha * 0.3})`;
+                    ctx.fill();
+                }
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                // Cyber bird body
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f3ff';
+                ctx.fillStyle = '#0f172a';
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Cyber eye (Pink neon)
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff0055';
+                ctx.fillStyle = '#ff0055';
+                ctx.beginPath();
+                ctx.arc(6, -4, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Beak
+                ctx.fillStyle = '#f4ee00';
+                ctx.beginPath();
+                ctx.moveTo(12, -2);
+                ctx.lineTo(20, 2);
+                ctx.lineTo(12, 6);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            },
+            jump() {
+                this.velocity = this.jumpStrength;
+                playSound('jump');
+            }
+        };
+
+        // Pipes Management
+        let pipes = [];
+        const pipeWidth = 60;
+        const pipeGap = 150;
+        let pipeTimer = 0;
+        const pipeInterval = 100; // frames
+
+        function spawnPipe() {
+            const clientHeight = canvas.clientHeight;
+            const minHeight = 60;
+            const maxHeight = clientHeight - 160 - pipeGap;
+            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+
+            pipes.push({
+                x: canvas.clientWidth + 50,
+                top: topHeight,
+                bottom: clientHeight - 40 - (topHeight + pipeGap),
+                passed: false
+            });
+        }
+
+        function updatePipes() {
+            pipeTimer++;
+            if (pipeTimer >= pipeInterval) {
+                spawnPipe();
+                pipeTimer = 0;
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 2.8;
+
+                // Check pass score
+                if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                    pipes[i].passed = true;
+                    score++;
+                    currentScoreEl.textContent = score;
+                    playSound('score');
+                }
+
+                // Check collision
+                if (
+                    bird.x + bird.radius > pipes[i].x &&
+                    bird.x - bird.radius < pipes[i].x + pipeWidth
+                ) {
+                    if (
+                        bird.y - bird.radius < pipes[i].top ||
+                        bird.y + bird.radius > canvas.clientHeight - 40 - pipes[i].bottom
+                    ) {
+                        gameOver();
+                    }
+                }
+
+                // Remove off-screen pipes
+                if (pipes[i].x + pipeWidth < -50) {
+                    pipes.splice(i, 1);
+                }
+            }
+        }
+
+        function drawPipes() {
+            const clientHeight = canvas.clientHeight;
+            pipes.forEach(pipe => {
+                // Neon Glow styling for pipes
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff0055';
+                ctx.fillStyle = '#1e1b4b';
+                ctx.strokeStyle = '#ff0055';
+                ctx.lineWidth = 3;
+
+                // Top Pipe
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.strokeRect(pipe.x, 0, pipeWidth, pipe.top);
+                // Top Pipe Cap
+                ctx.fillRect(pipe.x - 4, pipe.top - 16, pipeWidth + 8, 16);
+                ctx.strokeRect(pipe.x - 4, pipe.top - 16, pipeWidth + 8, 16);
+
+                // Bottom Pipe
+                const bottomY = clientHeight - 40 - pipe.bottom;
+                ctx.fillRect(pipe.x, bottomY, pipeWidth, pipe.bottom);
+                ctx.strokeRect(pipe.x, bottomY, pipeWidth, pipe.bottom);
+                // Bottom Pipe Cap
+                ctx.fillRect(pipe.x - 4, bottomY, pipeWidth + 8, 16);
+                ctx.strokeRect(pipe.x - 4, bottomY, pipeWidth + 8, 16);
+            });
+            ctx.shadowBlur = 0; // reset
+        }
+
+        // Background Cyber Grid & Floor
+        let gridOffset = 0;
+        function drawBackground() {
+            const clientWidth = canvas.clientWidth;
+            const clientHeight = canvas.clientHeight;
+
+            // Background gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, clientHeight);
+            bgGrad.addColorStop(0, '#030712');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, clientWidth, clientHeight);
+
+            // Moving grid lines (Cyberpunk perspective effect)
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.08)';
+            ctx.lineWidth = 1;
+            gridOffset = (gridOffset + 1.5) % 30;
+
+            for (let x = gridOffset; x < clientWidth; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, clientHeight - 40);
+                ctx.stroke();
+            }
+
+            // Floor (Cyber Ground)
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00f3ff';
+            ctx.fillStyle = '#090d16';
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 3;
+            ctx.fillRect(0, clientHeight - 40, clientWidth, 40);
+            ctx.strokeRect(0, clientHeight - 40, clientWidth, 40);
+            ctx.shadowBlur = 0;
+
+            // Animated grid dashes on floor
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let startX = -gridOffset * 2;
+            for (let x = startX; x < clientWidth; x += 40) {
+                ctx.moveTo(x, clientHeight - 20);
+                ctx.lineTo(x + 20, clientHeight - 20);
+            }
+            ctx.stroke();
+        }
+
+        // Game Loop
+        function gameLoop() {
+            if (gameState !== 'PLAYING') return;
+
+            ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+            drawBackground();
+            updatePipes();
+            drawPipes();
+            bird.update();
+            bird.draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            initAudio();
+            gameState = 'PLAYING';
+            score = 0;
+            currentScoreEl.textContent = score;
+            pipes = [];
+            pipeTimer = 0;
+            bird.reset();
+
+            startScreen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => startScreen.classList.add('hidden'), 300);
+            gameOverScreen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => gameOverScreen.classList.add('hidden'), 300);
+            hud.classList.remove('hidden');
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            if (gameState === 'GAMEOVER') return;
+            gameState = 'GAMEOVER';
+            playSound('crash');
+
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('cyber_flappy_highscore', highscore);
+            }
+
+            bestScoreEl.textContent = highscore;
+            startBestScoreEl.textContent = highscore;
+            finalScoreEl.textContent = score;
+            finalBestScoreEl.textContent = highscore;
+
+            hud.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden', 'opacity-0');
+        }
+
+        // Controls (Keyboard, Mouse, Touch)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (gameState === 'PLAYING') {
+                    bird.jump();
+                } else if (gameState === 'START') {
+                    startGame();
+                } else if (gameState === 'GAMEOVER') {
+                    startGame();
+                }
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameState === 'PLAYING') {
+                bird.jump();
+            } else if (gameState === 'START') {
+                startGame();
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameState === 'PLAYING') {
+                bird.jump();
+            } else if (gameState === 'START') {
+                startGame();
+            }
+        }, { passive: false });
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Initial render frame to show background on start screen
+        function initialRender() {
+            drawBackground();
+            bird.draw();
+        }
+        initialRender();
+    </script>
+</body>
+</html>
